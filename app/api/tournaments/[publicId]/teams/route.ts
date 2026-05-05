@@ -27,8 +27,11 @@ export async function POST(request: Request, context: Ctx) {
   if (mode === "solo" && memberIds.length !== 1) {
     return jsonError("Solo mode requires exactly one member per team", 400);
   }
-  if (mode === "duo" && memberIds.length !== 2) {
-    return jsonError("Duo mode requires exactly two members per team", 400);
+  if (mode === "duo" && memberIds.length !== 2 && memberIds.length !== 1) {
+    return jsonError(
+      "Duo mode requires exactly one or two members per team",
+      400,
+    );
   }
 
   const uniq = new Set(memberIds);

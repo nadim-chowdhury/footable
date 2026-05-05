@@ -18,7 +18,9 @@ export async function PATCH(request: Request, context: Ctx) {
   } catch {
     return jsonError("Invalid JSON body", 400);
   }
-  const displayName = String((body as { displayName?: string }).displayName ?? "").trim();
+  const displayName = String(
+    (body as { displayName?: string }).displayName ?? "",
+  ).trim();
   if (!displayName) return jsonError("displayName is required", 400);
 
   const updated = await auth.sql`
@@ -39,14 +41,26 @@ export async function DELETE(request: Request, context: Ctx) {
     return jsonError("Tournament is locked after fixtures are generated", 400);
   }
 
-  const used = await auth.sql`
-    select 1 from team_members tm
-    join teams t on t.id = tm.team_id
-    where tm.member_id = ${memberId}::uuid and t.tournament_id = ${auth.tournament.id}
-    limit 1
-  `;
-  if (used.length > 0) {
-    return jsonError("Remove this player from teams before deleting", 400);
+  if (auth.tournament.team_mode !== "solo") {
+    const used = await auth.sql`
+      select 1 from team_members tm
+      join teams t on t.id = tm.team_id
+      where tm.member_id = ${memberId}::uuid and t.tournament_id = ${auth.tournament.id}
+      limit 1
+    `;
+    if (used.length > 0) {
+      return jsonError("Remove this player from teams before deleting", 400);
+    }
+  }
+
+  if (auth.tournament.team_mode === "solo") {
+    await auth.sql`
+      delete from teams
+      where tournament_id = ${auth.tournament.id}
+      and id in (
+        select team_id from team_members where member_id = ${memberId}::uuid
+      )
+    `;
   }
 
   const deleted = await auth.sql`

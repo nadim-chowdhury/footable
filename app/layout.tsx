@@ -49,7 +49,7 @@ export default function RootLayout({
         "font-sans",
       )}
     >
-      <body className="flex min-h-full flex-col">
+      <body className="flex min-h-full flex-col bg-secondary">
         <Providers>{children}</Providers>
       </body>
     </html>

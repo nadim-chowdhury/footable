@@ -1,6 +1,11 @@
 import { randomInt } from "node:crypto";
 
-export type Pairing = { homeId: string; awayId: string };
+export type Pairing = {
+  homeId: string;
+  awayId: string;
+  roundIndex: number;
+  matchIndex: number;
+};
 
 export function shuffleTeamIds(teamIds: string[]): string[] {
   const a = [...teamIds];
@@ -15,17 +20,19 @@ export function shuffleTeamIds(teamIds: string[]): string[] {
 export function roundRobinSchedule(teamIds: string[]): Pairing[] {
   const n = teamIds.length;
   if (n < 2) return [];
+  const teams = [...teamIds];
   if (n % 2 !== 0) {
-    throw new Error("League needs an even number of teams for this scheduler");
+    teams.push("BYE");
   }
   const schedule: Pairing[] = [];
-  const teams = [...teamIds];
-  for (let round = 0; round < n - 1; round++) {
-    for (let i = 0; i < n / 2; i++) {
-      schedule.push({
-        homeId: teams[i],
-        awayId: teams[n - 1 - i],
-      });
+  const totalTeams = teams.length;
+  for (let round = 0; round < totalTeams - 1; round++) {
+    for (let i = 0; i < totalTeams / 2; i++) {
+      const homeId = teams[i];
+      const awayId = teams[totalTeams - 1 - i];
+      if (homeId !== "BYE" && awayId !== "BYE") {
+        schedule.push({ homeId, awayId, roundIndex: round, matchIndex: i });
+      }
     }
     const last = teams.pop();
     if (last !== undefined) teams.splice(1, 0, last);

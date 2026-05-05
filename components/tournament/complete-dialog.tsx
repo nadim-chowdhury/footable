@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Spinner } from "@/components/ui/spinner";
 
 export function CompleteDialog({
   open,
@@ -18,6 +19,7 @@ export function CompleteDialog({
   open: boolean;
   onOpenChange: (o: boolean) => void;
   onConfirm: () => void;
+  isCompleting?: boolean;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -39,9 +41,14 @@ export function CompleteDialog({
           >
             Cancel
           </Button>
-          <Button variant="destructive" size="sm" onClick={onConfirm}>
-            🏁 Complete Tournament
-          </Button>
+          {/* <Button
+            variant="destructive"
+            size="sm"
+            onClick={onConfirm}
+            disabled={isCompleting}
+          >
+            {isCompleting ? <Spinner /> : "Complete Tournament"}
+          </Button> */}
         </DialogFooter>
       </DialogContent>
     </Dialog>

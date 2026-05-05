@@ -38,17 +38,10 @@ export async function POST(request: Request, context: Ctx) {
       }
 
       if (format === "league") {
-        if (teamRows.length % 2 !== 0) {
-          throw new Error("EVEN");
-        }
         const teamIds = teamRows.map((t) => t.id);
         const schedule = roundRobinSchedule(teamIds);
-        const n = teamIds.length;
-        const perRound = n / 2;
         for (let i = 0; i < schedule.length; i++) {
-          const roundIndex = Math.floor(i / perRound);
-          const matchIndex = i % perRound;
-          const { homeId, awayId } = schedule[i];
+          const { homeId, awayId, roundIndex, matchIndex } = schedule[i];
           await tx`
             insert into fixtures (
               tournament_id, round_index, match_index, stage,

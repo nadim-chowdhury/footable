@@ -152,7 +152,7 @@ export function TournamentHeader({
             onClick={copyLink}
             className="gap-1.5"
           >
-            <span className="text-xs">📋</span> Copy link
+            Copy link
           </Button>
           {!isCompleted && (
             <>
@@ -162,10 +162,9 @@ export function TournamentHeader({
                 onClick={onUnlock}
                 className="gap-1.5"
               >
-                <span className="text-xs">{hasPin ? "🔓" : "🔒"}</span>
                 {hasPin ? "Change PIN" : "Unlock"}
               </Button>
-              {hasPin && tournament.fixtures_generated && (
+              {/* {hasPin && tournament.fixtures_generated && (
                 <Button
                   type="button"
                   variant="destructive"
@@ -173,9 +172,9 @@ export function TournamentHeader({
                   onClick={onComplete}
                   className="gap-1.5"
                 >
-                  <span className="text-xs">🏁</span> Complete
+                  Complete
                 </Button>
-              )}
+              )} */}
             </>
           )}
         </div>

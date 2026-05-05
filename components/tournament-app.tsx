@@ -14,6 +14,7 @@ import { StandingsTable } from "@/components/tournament/standings-table";
 import { BracketView } from "@/components/tournament/bracket-view";
 import { PinDialog } from "@/components/tournament/pin-dialog";
 import { CompleteDialog } from "@/components/tournament/complete-dialog";
+import { Spinner } from "@/components/ui/spinner";
 
 type Member = { id: string; display_name: string };
 type Team = { id: string; label: string; memberIds: string[] };
@@ -64,6 +65,7 @@ export function TournamentApp({ publicId }: { publicId: string }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [pinOpen, setPinOpen] = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
   const [hasPin, setHasPin] = useState(false);
 
   const checkPin = useCallback(() => {
@@ -106,25 +108,31 @@ export function TournamentApp({ publicId }: { publicId: string }) {
   }, [publicId]);
 
   const handleComplete = async () => {
-    const res = await fetchWithPin(`/api/tournaments/${publicId}/complete`, {
-      method: "POST",
-    });
-    if (!res.ok) {
-      const j = (await res.json().catch(() => ({}))) as { error?: string };
-      toast.error(j.error ?? "Could not complete");
-      return;
+    setIsCompleting(true);
+    try {
+      const res = await fetchWithPin(`/api/tournaments/${publicId}/complete`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        toast.error(j.error ?? "Could not complete");
+        return;
+      }
+      toast.success("Tournament completed!");
+      setCompleteOpen(false);
+      await refresh();
+    } finally {
+      setIsCompleting(false);
     }
-    toast.success("🏆 Tournament completed!");
-    setCompleteOpen(false);
-    await refresh();
   };
 
   if (loadError || !bundle) {
     return (
       <div className="mx-auto flex min-h-[50vh] max-w-lg flex-col items-center justify-center gap-4 px-4">
-        <p className="text-sm text-muted-foreground">
-          {loadError ?? "Loading…"}
-        </p>
+        {!loadError && <Spinner className="size-8 text-primary" />}
+        {/* <p className="text-sm text-muted-foreground text-center">
+          {loadError ?? "Loading tournament details…"}
+        </p> */}
         <Link
           href="/"
           className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
@@ -140,92 +148,122 @@ export function TournamentApp({ publicId }: { publicId: string }) {
   const isCompleted = !!tournament.completed_at;
 
   return (
-    <div className="relative mx-auto max-w-3xl px-4 py-10 md:px-6">
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-linear-to-b from-primary/8 to-transparent dark:from-primary/12"
+    <div className="relative px-4 py-10 md:px-6">
+      {/* <div
+        className="pointer-events-none absolute inset-x-0 top-0 w-full h-full bg-linear-to-b from-primary/8 to-transparent dark:from-primary/12"
         aria-hidden
-      />
+      /> */}
 
-      <TournamentHeader
-        tournament={tournament}
-        hasPin={hasPin}
-        publicId={publicId}
-        tournamentUrl={tournamentUrl}
-        onUnlock={() => setPinOpen(true)}
-        onComplete={() => setCompleteOpen(true)}
-        onRefresh={refresh}
-        fetchWithPin={fetchWithPin}
-      />
+      <section className="max-w-3xl mx-auto">
+        <TournamentHeader
+          tournament={tournament}
+          hasPin={hasPin}
+          publicId={publicId}
+          tournamentUrl={tournamentUrl}
+          onUnlock={() => setPinOpen(true)}
+          onComplete={() => setCompleteOpen(true)}
+          onRefresh={refresh}
+          fetchWithPin={fetchWithPin}
+        />
 
-      <Tabs defaultValue="squad" className="gap-4">
-        <TabsList variant="line" className="w-full min-w-0 justify-start">
-          <TabsTrigger value="squad">Squad</TabsTrigger>
-          <TabsTrigger value="fixtures">Fixtures</TabsTrigger>
-          {tournament.format === "league" ? (
-            <TabsTrigger value="table">Table</TabsTrigger>
-          ) : (
-            <TabsTrigger value="bracket">Bracket</TabsTrigger>
-          )}
-        </TabsList>
+        <Tabs defaultValue="squad" className="gap-4">
+          <TabsList variant="line" className="w-full min-w-0 justify-start">
+            <TabsTrigger value="squad">Squad</TabsTrigger>
+            <TabsTrigger value="fixtures">Fixtures</TabsTrigger>
+            {tournament.format === "league" ? (
+              <TabsTrigger value="table">Table</TabsTrigger>
+            ) : (
+              <TabsTrigger value="bracket">Bracket</TabsTrigger>
+            )}
+          </TabsList>
 
-        <TabsContent value="squad">
-          <SquadPanel
-            tournament={tournament}
-            members={members}
-            teams={teams}
-            hasPin={hasPin}
-            publicId={publicId}
-            onRefresh={refresh}
-            fetchWithPin={fetchWithPin}
-          />
-        </TabsContent>
+          <TabsContent value="squad">
+            <SquadPanel
+              tournament={tournament}
+              members={members}
+              teams={teams}
+              hasPin={hasPin}
+              publicId={publicId}
+              onRefresh={refresh}
+              fetchWithPin={fetchWithPin}
+            />
+          </TabsContent>
 
-        <TabsContent value="fixtures">
-          <FixturesPanel
-            fixtures={fixtures}
-            hasPin={hasPin}
-            publicId={publicId}
-            isCompleted={isCompleted}
-            onSaved={refresh}
-            fetchWithPin={fetchWithPin}
-          />
-        </TabsContent>
+          <TabsContent value="fixtures">
+            <FixturesPanel
+              fixtures={fixtures}
+              hasPin={hasPin}
+              publicId={publicId}
+              isCompleted={isCompleted}
+              onSaved={refresh}
+              fetchWithPin={fetchWithPin}
+            />
+          </TabsContent>
 
-        <TabsContent value="table">
-          <StandingsTable standings={standings} labelByTeam={labelByTeam} />
-        </TabsContent>
+          <TabsContent value="table">
+            <StandingsTable standings={standings} labelByTeam={labelByTeam} />
+          </TabsContent>
 
-        <TabsContent value="bracket">
-          <BracketView fixtures={fixtures} />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="bracket">
+            <BracketView fixtures={fixtures} />
+          </TabsContent>
+        </Tabs>
 
-      <PinDialog
-        open={pinOpen}
-        onOpenChange={setPinOpen}
-        publicId={publicId}
-        tournamentName={tournament.name}
-        onPinSaved={checkPin}
-      />
-      <CompleteDialog
-        open={completeOpen}
-        onOpenChange={setCompleteOpen}
-        onConfirm={() => void handleComplete()}
-      />
+        <PinDialog
+          open={pinOpen}
+          onOpenChange={setPinOpen}
+          publicId={publicId}
+          tournamentName={tournament.name}
+          onPinSaved={checkPin}
+        />
+        <CompleteDialog
+          open={completeOpen}
+          onOpenChange={setCompleteOpen}
+          onConfirm={() => void handleComplete()}
+          isCompleting={isCompleting}
+        />
+      </section>
 
       <footer className="mt-16 border-t border-border/40 pt-8 text-center text-xs text-muted-foreground">
+        <div className="mb-4 flex flex-wrap items-center justify-center gap-4">
+          <a
+            href="https://www.twitch.tv/gxlieo"
+            target="_blank"
+            rel="noreferrer"
+            className="font-semibold transition-colors hover:text-primary"
+          >
+            Twitch
+          </a>
+          <a
+            href="https://www.youtube.com/@gxlieo"
+            target="_blank"
+            rel="noreferrer"
+            className="font-semibold transition-colors hover:text-primary"
+          >
+            YouTube
+          </a>
+          <a
+            href="https://www.tiktok.com/@gxlieo"
+            target="_blank"
+            rel="noreferrer"
+            className="font-semibold transition-colors hover:text-primary"
+          >
+            TikTok
+          </a>
+          <a
+            href="https://www.facebook.com/gxlieo"
+            target="_blank"
+            rel="noreferrer"
+            className="font-semibold transition-colors hover:text-primary"
+          >
+            Facebook
+          </a>
+        </div>
         <Link
           href="/"
           className="underline-offset-4 hover:underline hover:text-primary transition-colors"
         >
           Footable
-        </Link>
-        {" · "}
-        <Link
-          href="/wheel"
-          className="underline-offset-4 hover:underline hover:text-primary transition-colors"
-        >
-          Duo wheel
         </Link>
       </footer>
     </div>
