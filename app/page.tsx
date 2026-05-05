@@ -59,29 +59,33 @@ export default function Home() {
   };
 
   return (
-    <div className="mx-auto flex min-h-full max-w-lg flex-col px-4 py-16">
-      <header className="mb-10 text-center sm:text-left">
-        <p className="mb-2 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+    <div className="relative mx-auto flex min-h-full max-w-xl flex-col px-4 py-16 md:px-6">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-primary/[0.08] to-transparent dark:from-primary/[0.12]"
+        aria-hidden
+      />
+      <header className="relative mb-10 text-center sm:text-left md:mb-12">
+        <div className="mb-4 inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-primary dark:bg-primary/15">
           EA FC &amp; friends
-        </p>
-        <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
+        </div>
+        <h1 className="font-heading text-xl font-semibold tracking-tight md:text-2xl">
           Footable
         </h1>
-        <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
+        <p className="mt-3 max-w-lg text-pretty text-xs leading-relaxed text-muted-foreground md:text-sm">
           Run leagues and knockouts without spreadsheets. Share one link, keep
           scores in sync, and let the table update itself.
         </p>
       </header>
 
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>New tournament</CardTitle>
-          <CardDescription>
+      <Card className="relative mb-8 border-primary/10 shadow-lg shadow-primary/[0.06] ring-1 ring-black/[0.04] dark:ring-white/[0.06] dark:shadow-black/40">
+        <CardHeader className="border-b border-border/60 bg-muted/30 dark:bg-muted/10">
+          <CardTitle className="text-base md:text-lg">New tournament</CardTitle>
+          <CardDescription className="text-pretty">
             You will get a private 6-digit PIN for editing. Share the page link
             so friends can follow along.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+        <CardContent className="flex flex-col gap-5 px-4 py-6 md:px-8">
           <div className="grid gap-2">
             <Label htmlFor="tname">Name</Label>
             <Input

@@ -239,11 +239,15 @@ export function TournamentApp({ publicId }: { publicId: string }) {
   );
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
-      <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="relative mx-auto max-w-3xl px-4 py-10 md:px-6">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-primary/[0.06] to-transparent dark:from-primary/[0.1]"
+        aria-hidden
+      />
+      <header className="relative mb-8 flex flex-col gap-4 rounded-xl border border-primary/10 bg-card/80 p-5 shadow-lg shadow-primary/[0.04] ring-1 ring-black/[0.04] backdrop-blur-sm dark:bg-card/60 dark:ring-white/[0.06] dark:shadow-black/30 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="mb-1 flex flex-wrap items-center gap-2">
-            <h1 className="font-heading text-2xl font-semibold tracking-tight">
+            <h1 className="font-heading text-2xl font-semibold tracking-tight md:text-3xl">
               {tournament.name}
             </h1>
             <Badge variant="secondary" className="font-normal">
@@ -257,7 +261,7 @@ export function TournamentApp({ publicId }: { publicId: string }) {
             Share-only link — anyone can view. PIN required to edit.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
           <Button type="button" variant="outline" size="sm" onClick={copyLink}>
             Copy link
           </Button>
@@ -268,7 +272,7 @@ export function TournamentApp({ publicId }: { publicId: string }) {
       </header>
 
       <Tabs defaultValue="squad" className="gap-4">
-        <TabsList variant="line" className="w-full min-w-0 justify-start overflow-x-auto">
+        <TabsList variant="line" className="w-full min-w-0 justify-start">
           <TabsTrigger value="squad">Squad</TabsTrigger>
           <TabsTrigger value="fixtures">Fixtures</TabsTrigger>
           {tournament.format === "league" ? (
@@ -299,9 +303,9 @@ export function TournamentApp({ publicId }: { publicId: string }) {
                 </ul>
               )}
               {!tournament.fixtures_generated && (
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                  <div className="grid flex-1 gap-1.5">
-                    <Label htmlFor="member">New player</Label>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <div className="grid min-w-0 flex-1 gap-1.5">
+                    <Label htmlFor="member">Gamertag or name</Label>
                     <Input
                       id="member"
                       value={memberName}
@@ -312,11 +316,11 @@ export function TournamentApp({ publicId }: { publicId: string }) {
                   </div>
                   <Button
                     type="button"
-                    size="sm"
                     disabled={!hasPin}
                     onClick={() => void addMember()}
+                    className="w-full shrink-0 sm:w-auto"
                   >
-                    Add
+                    Add player
                   </Button>
                 </div>
               )}
@@ -412,7 +416,7 @@ export function TournamentApp({ publicId }: { publicId: string }) {
                     <Button
                       type="button"
                       variant="secondary"
-                      size="sm"
+                      className="w-full"
                       disabled={!hasPin}
                       onClick={() => void addTeam()}
                     >
@@ -430,7 +434,6 @@ export function TournamentApp({ publicId }: { publicId: string }) {
                 </p>
                 <Button
                   type="button"
-                  size="sm"
                   disabled={!hasPin || tournament.fixtures_generated}
                   onClick={() => void generateFixtures()}
                 >
