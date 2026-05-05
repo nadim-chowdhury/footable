@@ -215,12 +215,13 @@ export function SquadPanel({
             <ul className="flex flex-wrap gap-2">
               {members.map((m) => (
                 <li key={m.id} className="animate-scale-in">
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      "gap-1.5 pr-1.5 text-sm",
-                      assignedIds.has(m.id) && "opacity-50",
-                    )}
+                  <div
+                    // variant="secondary"
+                    // className={cn(
+                    //   "gap-1.5 pr-1.5 text-sm",
+                    //   assignedIds.has(m.id) && "opacity-50",
+                    // )}
+                    className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium whitespace-nowrap transition-colors h-10 px-4 py-2 bg-secondary text-secondary-foreground"
                   >
                     <span>{m.display_name}</span>
                     {canEdit && !assignedIds.has(m.id) && (
@@ -232,7 +233,7 @@ export function SquadPanel({
                         ×
                       </button>
                     )}
-                  </Badge>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -409,12 +410,14 @@ export function SquadPanel({
                 onClick={() => void generateFixtures()}
                 className="glow-neon w-full font-bold font-heading text-base h-12"
               >
-                {isGenerating && <Spinner className="mr-2" />}
-                {tournament.fixtures_generated
-                  ? "Fixtures locked"
-                  : isGenerating
-                    ? "Generating..."
-                    : `Generate fixtures (${teams.length} ${tournament.team_mode === "solo" ? "players" : "teams"})`}
+                {/* {isGenerating && <Spinner className="mr-2" />} */}
+                {tournament.fixtures_generated ? (
+                  "Fixtures locked"
+                ) : isGenerating ? (
+                  <Spinner className="mx-2" />
+                ) : (
+                  `Generate fixtures (${teams.length} ${tournament.team_mode === "solo" ? "players" : "teams"})`
+                )}
               </Button>
             </div>
           </CardContent>
