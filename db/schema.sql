@@ -9,13 +9,15 @@ CREATE TABLE IF NOT EXISTS tournaments (
   team_mode text NOT NULL CHECK (team_mode IN ('solo', 'duo')),
   pin_hash text NOT NULL,
   fixtures_generated boolean NOT NULL DEFAULT false,
+  completed_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS members (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tournament_id uuid NOT NULL REFERENCES tournaments (id) ON DELETE CASCADE,
-  display_name text NOT NULL
+  display_name text NOT NULL,
+  UNIQUE (tournament_id, display_name)
 );
 
 CREATE INDEX IF NOT EXISTS idx_members_tournament ON members (tournament_id);
@@ -48,6 +50,7 @@ CREATE TABLE IF NOT EXISTS fixtures (
   away_source_fixture_id uuid REFERENCES fixtures (id) ON DELETE SET NULL,
   home_score int,
   away_score int,
+  is_bye boolean NOT NULL DEFAULT false,
   played_at timestamptz,
   UNIQUE (tournament_id, stage, round_index, match_index)
 );

@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Geist_Mono, Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Providers } from "@/components/providers";
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'});
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const outfit = Outfit({
   subsets: ["latin"],
+  variable: "--font-outfit",
+  weight: ["400", "500", "600", "700", "800", "900"],
 });
 
 const geistMono = Geist_Mono({
@@ -17,9 +17,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Footable — small football tournaments",
+  title: "FOOTABLE — EA FC Tournament Manager",
   description:
-    "League and knockout brackets for EA FC nights. PIN-protected editing, live tables, duo wheel.",
+    "Run competitive leagues and knockouts for EA Sports FC. PIN-protected editing, live standings, duo spin wheel, and bracket visualization.",
+  keywords: [
+    "EA FC",
+    "tournament",
+    "FIFA",
+    "esports",
+    "bracket",
+    "league",
+    "knockout",
+  ],
 };
 
 export default function RootLayout({
@@ -31,7 +40,14 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable)}
+      className={cn(
+        "h-full",
+        "antialiased",
+        inter.variable,
+        outfit.variable,
+        geistMono.variable,
+        "font-sans",
+      )}
     >
       <body className="flex min-h-full flex-col">
         <Providers>{children}</Providers>

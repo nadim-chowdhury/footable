@@ -6,7 +6,7 @@ import { TooltipProvider } from "./ui/tooltip";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       <TooltipProvider>{children}</TooltipProvider>
       <Toaster position="top-center" />
     </ThemeProvider>

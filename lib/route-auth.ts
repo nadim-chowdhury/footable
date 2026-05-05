@@ -7,7 +7,20 @@ export async function requireTournamentPin(publicId: string, request: Request) {
   const sql = getSql();
   const tournament = await loadTournamentByPublicId(sql, publicId);
   if (!tournament) {
-    return { ok: false as const, response: jsonError("Tournament not found", 404) };
+    return {
+      ok: false as const,
+      response: jsonError("Tournament not found", 404),
+    };
+  }
+  // Tournament completion lock: PIN becomes invalid for mutations
+  if (tournament.completed_at) {
+    return {
+      ok: false as const,
+      response: jsonError(
+        "Tournament is completed — no further updates allowed",
+        403,
+      ),
+    };
   }
   const pin = request.headers.get("x-footable-pin")?.trim();
   if (!pin) {

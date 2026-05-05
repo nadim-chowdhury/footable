@@ -10,6 +10,7 @@ export type TournamentRow = {
   format: string;
   team_mode: string;
   fixtures_generated: boolean;
+  completed_at: Date | null;
   created_at: Date;
 };
 
@@ -26,6 +27,7 @@ export type FixtureRow = {
   away_source_fixture_id: string | null;
   home_score: number | null;
   away_score: number | null;
+  is_bye: boolean;
   played_at: Date | null;
   home_label: string | null;
   away_label: string | null;
@@ -35,9 +37,12 @@ export async function loadTournamentByPublicId(
   sql: Sql,
   publicId: string,
 ): Promise<(TournamentRow & { pin_hash: string }) | null> {
-  const rows = await sql`select id, public_id, name, format, team_mode, fixtures_generated, created_at, pin_hash
+  const rows =
+    await sql`select id, public_id, name, format, team_mode, fixtures_generated, completed_at, created_at, pin_hash
     from tournaments where public_id = ${publicId}::uuid`;
-  return (rows[0] as (TournamentRow & { pin_hash: string }) | undefined) ?? null;
+  return (
+    (rows[0] as (TournamentRow & { pin_hash: string }) | undefined) ?? null
+  );
 }
 
 export async function loadTournamentBundle(sql: Sql, tournamentId: string) {
@@ -45,7 +50,10 @@ export async function loadTournamentBundle(sql: Sql, tournamentId: string) {
     where tournament_id = ${tournamentId} order by display_name`) as MemberRow[];
 
   const teamRows = (await sql`select id, label from teams
-    where tournament_id = ${tournamentId} order by label`) as { id: string; label: string }[];
+    where tournament_id = ${tournamentId} order by label`) as {
+    id: string;
+    label: string;
+  }[];
 
   const links = (await sql`select team_id, member_id from team_members
     where team_id in (select id from teams where tournament_id = ${tournamentId})`) as {
@@ -70,7 +78,7 @@ export async function loadTournamentBundle(sql: Sql, tournamentId: string) {
       f.id, f.round_index, f.match_index, f.stage,
       f.home_team_id, f.away_team_id,
       f.home_source_fixture_id, f.away_source_fixture_id,
-      f.home_score, f.away_score, f.played_at,
+      f.home_score, f.away_score, f.is_bye, f.played_at,
       ht.label as home_label, at.label as away_label
     from fixtures f
     left join teams ht on ht.id = f.home_team_id
@@ -79,34 +87,69 @@ export async function loadTournamentBundle(sql: Sql, tournamentId: string) {
     order by case when f.stage = 'league' then 0 else 1 end, f.round_index asc, f.match_index asc`) as FixtureRow[];
 
   const standings = computeLeagueStandings(
-    fixtures.map((f) => ({
-      homeTeamId: f.home_team_id ?? "",
-      awayTeamId: f.away_team_id ?? "",
-      homeScore: f.home_score,
-      awayScore: f.away_score,
-      stage: f.stage,
-    })).filter((f) => f.homeTeamId && f.awayTeamId),
+    fixtures
+      .map((f) => ({
+        homeTeamId: f.home_team_id ?? "",
+        awayTeamId: f.away_team_id ?? "",
+        homeScore: f.home_score,
+        awayScore: f.away_score,
+        stage: f.stage,
+      }))
+      .filter((f) => f.homeTeamId && f.awayTeamId),
   );
 
   return { members, teams, fixtures, standings };
 }
 
 export async function propagateKnockoutWinner(sql: Sql, fixtureId: string) {
-  const rows = (await sql`select stage, home_score, away_score, home_team_id, away_team_id from fixtures where id = ${fixtureId}`) as {
-    stage: string;
-    home_score: number | null;
-    away_score: number | null;
-    home_team_id: string | null;
-    away_team_id: string | null;
-  }[];
+  const rows =
+    (await sql`select stage, home_score, away_score, home_team_id, away_team_id from fixtures where id = ${fixtureId}`) as {
+      stage: string;
+      home_score: number | null;
+      away_score: number | null;
+      home_team_id: string | null;
+      away_team_id: string | null;
+    }[];
   const f = rows[0];
   if (!f || f.stage !== "knockout") return;
   if (f.home_score === null || f.away_score === null) return;
   if (f.home_score === f.away_score) return;
-  const winner =
-    f.home_score > f.away_score ? f.home_team_id : f.away_team_id;
+  const winner = f.home_score > f.away_score ? f.home_team_id : f.away_team_id;
   if (!winner) return;
 
   await sql`update fixtures set home_team_id = ${winner} where home_source_fixture_id = ${fixtureId}`;
   await sql`update fixtures set away_team_id = ${winner} where away_source_fixture_id = ${fixtureId}`;
+}
+
+/**
+ * Clear downstream knockout propagation when a score is edited.
+ * Recursively clears team assignments that came from this fixture.
+ */
+export async function clearDownstreamPropagation(sql: Sql, fixtureId: string) {
+  // Find fixtures that depend on this one
+  const downstream = (await sql`
+    select id from fixtures
+    where home_source_fixture_id = ${fixtureId} or away_source_fixture_id = ${fixtureId}
+  `) as { id: string }[];
+
+  for (const d of downstream) {
+    // Clear the team assignment that came from our fixture
+    await sql`
+      update fixtures
+      set home_team_id = null
+      where id = ${d.id} and home_source_fixture_id = ${fixtureId}
+    `;
+    await sql`
+      update fixtures
+      set away_team_id = null
+      where id = ${d.id} and away_source_fixture_id = ${fixtureId}
+    `;
+    // Also clear scores of downstream matches and recurse
+    await sql`
+      update fixtures
+      set home_score = null, away_score = null, played_at = null
+      where id = ${d.id} and (home_source_fixture_id = ${fixtureId} or away_source_fixture_id = ${fixtureId})
+    `;
+    await clearDownstreamPropagation(sql, d.id);
+  }
 }

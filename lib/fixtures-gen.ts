@@ -33,11 +33,12 @@ export function roundRobinSchedule(teamIds: string[]): Pairing[] {
   return schedule;
 }
 
-export function assertPowerOfTwoTeams(count: number): void {
-  if (count < 2) throw new Error("Need at least 2 teams");
-  if ((count & (count - 1)) !== 0) {
-    throw new Error("Knockout needs a power-of-two team count (2, 4, 8, 16, …)");
-  }
+/** Return the next power of two >= n. */
+export function nextPowerOfTwo(n: number): number {
+  if (n <= 1) return 1;
+  let p = 1;
+  while (p < n) p *= 2;
+  return p;
 }
 
 export type KnockoutBlueprint = {
@@ -49,30 +50,50 @@ export type KnockoutBlueprint = {
   homeSourceMatch: number | null;
   awaySourceRound: number | null;
   awaySourceMatch: number | null;
+  isBye: boolean;
 };
 
-/** Build metadata for knockout rounds; caller inserts rows and maps (round,match)->id for sources. */
+/**
+ * Build metadata for knockout rounds.
+ * Supports non-power-of-two team counts by inserting BYEs.
+ * BYE matches are marked and should be auto-advanced after insertion.
+ */
 export function knockoutBlueprint(teamIds: string[]): KnockoutBlueprint[] {
-  assertPowerOfTwoTeams(teamIds.length);
-  const n = teamIds.length;
-  const rounds = Math.log2(n);
+  if (teamIds.length < 2) throw new Error("Need at least 2 teams");
+
+  const slotCount = nextPowerOfTwo(teamIds.length);
+  const byeCount = slotCount - teamIds.length;
+  const rounds = Math.log2(slotCount);
   const blueprint: KnockoutBlueprint[] = [];
 
-  for (let m = 0; m < n / 2; m++) {
+  // Seed teams: top seeds get byes. We place them so byes are spread out.
+  const slots: (string | null)[] = new Array(slotCount).fill(null);
+  // Fill real teams first, leaving nulls as BYEs
+  for (let i = 0; i < teamIds.length; i++) {
+    slots[i] = teamIds[i];
+  }
+
+  // Round 0: first-round matches
+  for (let m = 0; m < slotCount / 2; m++) {
+    const home = slots[m * 2];
+    const away = slots[m * 2 + 1];
+    const isBye = home === null || away === null;
     blueprint.push({
       roundIndex: 0,
       matchIndex: m,
-      homeTeamId: teamIds[m * 2],
-      awayTeamId: teamIds[m * 2 + 1],
+      homeTeamId: home,
+      awayTeamId: away,
       homeSourceRound: null,
       homeSourceMatch: null,
       awaySourceRound: null,
       awaySourceMatch: null,
+      isBye,
     });
   }
 
+  // Subsequent rounds
   for (let r = 1; r < rounds; r++) {
-    const matchesInRound = n / 2 ** (r + 1);
+    const matchesInRound = slotCount / 2 ** (r + 1);
     for (let m = 0; m < matchesInRound; m++) {
       blueprint.push({
         roundIndex: r,
@@ -83,6 +104,7 @@ export function knockoutBlueprint(teamIds: string[]): KnockoutBlueprint[] {
         homeSourceMatch: m * 2,
         awaySourceRound: r - 1,
         awaySourceMatch: m * 2 + 1,
+        isBye: false,
       });
     }
   }
