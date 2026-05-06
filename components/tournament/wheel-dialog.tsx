@@ -117,7 +117,7 @@ export function WheelDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md bg-card/95 backdrop-blur-md">
+      <DialogContent className="max-w-3xl! bg-card/95 backdrop-blur-md">
         <DialogHeader>
           <DialogTitle className="font-heading text-xl font-bold">
             Random Duo Wheel
@@ -128,8 +128,8 @@ export function WheelDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col items-center gap-6 py-4">
-          <div className="relative">
+        <div className="flex items-center gap-6 py-4">
+          <div className="relative ml-2">
             {/* Pointer */}
             <div
               className="absolute -top-0.5 left-1/2 z-20 -translate-x-1/2 drop-shadow-md"
@@ -178,16 +178,16 @@ export function WheelDialog({
               className="glow-neon w-full font-heading font-bold"
               size="lg"
             >
-              {spinning ? "Spinning…" : "Spin for duos"}
+              {spinning ? <Spinner /> : "Spin for duos"}
             </Button>
           ) : (
             <div className="w-full flex flex-col gap-4 animate-slide-up">
-              <div className="max-h-48 overflow-y-auto pr-2 space-y-2">
+              <div className="overflow-y-auto pr-2 space-y-2">
                 {pairs.map((pair, i) => (
                   <div
                     key={`${pair.a.id}-${pair.b?.id ?? "solo"}-${i}`}
                     className={cn(
-                      "flex items-center justify-between rounded-lg border px-3 py-2",
+                      "grid grid-cols-3 items-center rounded-lg border px-3 py-2",
                       pair.b
                         ? "border-border/80 bg-muted/20"
                         : "border-chart-4/30 bg-chart-4/10",
@@ -198,20 +198,27 @@ export function WheelDialog({
                     </span>
                     {pair.b ? (
                       <>
-                        <Badge
-                          variant="secondary"
-                          className="text-[0.6rem] uppercase tracking-widest mx-2 shrink-0"
-                        >
-                          duo
-                        </Badge>
+                        <div className="flex items-center justify-center">
+                          <Badge
+                            // variant=""
+                            className="text-[0.6rem] uppercase tracking-widest mx-2 shrink-0"
+                          >
+                            duo
+                          </Badge>
+                        </div>
                         <span className="font-semibold text-sm text-right">
                           {pair.b.display_name}
                         </span>
                       </>
                     ) : (
-                      <Badge className="bg-chart-4/15 text-chart-4 border-chart-4/30 text-[0.6rem] uppercase tracking-widest shrink-0">
-                        solo
-                      </Badge>
+                      <>
+                        <div className="flex items-center justify-center">
+                          <Badge className="bg-chart-4/15 text-chart-4 border-chart-4/30 text-[0.6rem] uppercase tracking-widest shrink-0">
+                            solo
+                          </Badge>
+                          <span className="font-semibold text-sm text-right"></span>
+                        </div>
+                      </>
                     )}
                   </div>
                 ))}

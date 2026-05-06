@@ -25,6 +25,8 @@ import {
 import { cn } from "@/lib/utils";
 import { WheelDialog } from "./wheel-dialog";
 import { Spinner } from "@/components/ui/spinner";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Delete01Icon } from "@hugeicons/core-free-icons";
 
 type Member = { id: string; display_name: string };
 type Team = { id: string; label: string; memberIds: string[] };
@@ -65,6 +67,8 @@ export function SquadPanel({
   const [isAdding, setIsAdding] = useState(false);
   const [isAddingTeam, setIsAddingTeam] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingTeamId, setDeletingTeamId] = useState<string | null>(null);
 
   const savePairs = async (pairs: { a: Member; b: Member | null }[]) => {
     for (const pair of pairs) {
@@ -112,29 +116,42 @@ export function SquadPanel({
     }
   };
   const removeMember = async (id: string) => {
-    const res = await fetchWithPin(
-      `/api/tournaments/${publicId}/members/${id}`,
-      { method: "DELETE" },
-    );
-    if (!res.ok) {
-      const j = (await res.json().catch(() => ({}))) as { error?: string };
-      toast.error(j.error ?? "Failed");
-      return;
+    setDeletingId(id);
+    try {
+      const res = await fetchWithPin(
+        `/api/tournaments/${publicId}/members/${id}`,
+        { method: "DELETE" },
+      );
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        toast.error(j.error ?? "Failed");
+        return;
+      }
+      toast.success("Player removed");
+      await onRefresh();
+    } finally {
+      setDeletingId(null);
     }
-    toast.success("Player removed");
-    await onRefresh();
   };
   const removeTeam = async (id: string) => {
-    const res = await fetchWithPin(`/api/tournaments/${publicId}/teams/${id}`, {
-      method: "DELETE",
-    });
-    if (!res.ok) {
-      const j = (await res.json().catch(() => ({}))) as { error?: string };
-      toast.error(j.error ?? "Failed");
-      return;
+    setDeletingTeamId(id);
+    try {
+      const res = await fetchWithPin(
+        `/api/tournaments/${publicId}/teams/${id}`,
+        {
+          method: "DELETE",
+        },
+      );
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        toast.error(j.error ?? "Failed");
+        return;
+      }
+      toast.success("Team removed");
+      await onRefresh();
+    } finally {
+      setDeletingTeamId(null);
     }
-    toast.success("Team removed");
-    await onRefresh();
   };
   const addTeam = async () => {
     const mode = tournament.team_mode;
@@ -221,18 +238,32 @@ export function SquadPanel({
                     //   "gap-1.5 pr-1.5 text-sm",
                     //   assignedIds.has(m.id) && "opacity-50",
                     // )}
-                    className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium whitespace-nowrap transition-colors h-10 px-4 py-2 bg-secondary text-secondary-foreground"
+                    className="w-full inline-flex items-center justify-center gap-4 rounded-full text-sm font-medium whitespace-nowrap transition-colors h-10 px-4 py-2 bg-secondary text-secondary-foreground border-l-4 border-primary"
                   >
-                    <span>{m.display_name}</span>
-                    {canEdit && !assignedIds.has(m.id) && (
-                      <button
-                        type="button"
-                        onClick={() => void removeMember(m.id)}
-                        className="ml-0.5 rounded-full p-0.5 text-xs text-muted-foreground hover:text-destructive"
-                      >
-                        ×
-                      </button>
-                    )}
+                    <span className="px-4">{m.display_name}</span>
+                    {canEdit &&
+                      (!assignedIds.has(m.id) ||
+                        tournament.team_mode === "solo") && (
+                        <button
+                          type="button"
+                          onClick={() => void removeMember(m.id)}
+                          disabled={deletingId === m.id}
+                          className="group inline-flex items-center justify-center h-8 w-8 rounded-full bg-destructive/10 hover:bg-destructive/20 active:scale-95 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-destructive/40 disabled:opacity-50 disabled:pointer-events-none"
+                          aria-label="Remove member"
+                          title="Remove member"
+                        >
+                          {deletingId === m.id ? (
+                            <Spinner className="w-4 h-4 text-destructive" />
+                          ) : (
+                            <HugeiconsIcon
+                              icon={Delete01Icon}
+                              size={16}
+                              className="text-destructive/70 group-hover:text-destructive transition-colors"
+                              strokeWidth={1.8}
+                            />
+                          )}
+                        </button>
+                      )}
                   </div>
                 </li>
               ))}
@@ -287,7 +318,7 @@ export function SquadPanel({
                 <div className="px-1 pt-1 pb-3">
                   <Button
                     type="button"
-                    className="w-full h-12 bg-primary/20 text-primary border border-primary/50 hover:bg-primary/30 hover:text-primary transition-all font-bold text-base shadow-[0_0_20px_-5px_hsl(var(--primary))]"
+                    className="w-full h-12 bg-primary/20 text-primary border border-primary/50 hover:bg-primary/30 hover:text-primary transition-all font-bold text-base shadow-[0_0_20px_-5px_hsl(var(--primary))] rounded-full"
                     onClick={() => setWheelOpen(true)}
                   >
                     Spin for Duos ({unassigned.length} unassigned players)
@@ -315,9 +346,14 @@ export function SquadPanel({
                       <button
                         type="button"
                         onClick={() => void removeTeam(t.id)}
-                        className="rounded-md p-1 text-xs text-muted-foreground hover:text-destructive"
+                        disabled={deletingTeamId === t.id}
+                        className="rounded-md p-1.5 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
                       >
-                        ✕
+                        {deletingTeamId === t.id ? (
+                          <Spinner className="w-3 h-3" />
+                        ) : (
+                          "✕"
+                        )}
                       </button>
                     )}
                   </li>
@@ -329,21 +365,29 @@ export function SquadPanel({
                 <Separator />
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="grid gap-1.5">
-                    <Label className="text-xs text-muted-foreground">
+                    <Label className="text-sm text-muted-foreground">
                       Player A
                     </Label>
                     <Select
                       value={mA || undefined}
                       onValueChange={(v) => setMA(v ?? "")}
                     >
-                      <SelectTrigger className="w-full min-w-0 h-11 text-sm bg-background border-border/80">
-                        <SelectValue placeholder="Select…" />
+                      <SelectTrigger className="w-full min-w-0 h-14 text-base bg-background border-border/80 py-5">
+                        <SelectValue placeholder="Select…">
+                          {mA
+                            ? members.find((m) => m.id === mA)?.display_name
+                            : undefined}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {unassigned
                           .filter((m) => m.id !== mB)
                           .map((m) => (
-                            <SelectItem key={m.id} value={m.id}>
+                            <SelectItem
+                              key={m.id}
+                              value={m.id}
+                              className="py-3 text-base cursor-pointer"
+                            >
                               {m.display_name}
                             </SelectItem>
                           ))}
@@ -351,21 +395,29 @@ export function SquadPanel({
                     </Select>
                   </div>
                   <div className="grid gap-1.5">
-                    <Label className="text-xs text-muted-foreground">
+                    <Label className="text-sm text-muted-foreground">
                       Player B
                     </Label>
                     <Select
                       value={mB || undefined}
                       onValueChange={(v) => setMB(v ?? "")}
                     >
-                      <SelectTrigger className="w-full min-w-0 h-11 text-sm bg-background border-border/80">
-                        <SelectValue placeholder="Select…" />
+                      <SelectTrigger className="w-full min-w-0 h-14 text-base bg-background border-border/80 py-5">
+                        <SelectValue placeholder="Select…">
+                          {mB
+                            ? members.find((m) => m.id === mB)?.display_name
+                            : undefined}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {unassigned
                           .filter((m) => m.id !== mA)
                           .map((m) => (
-                            <SelectItem key={m.id} value={m.id}>
+                            <SelectItem
+                              key={m.id}
+                              value={m.id}
+                              className="py-3 text-base cursor-pointer"
+                            >
                               {m.display_name}
                             </SelectItem>
                           ))}

@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Spinner } from "../ui/spinner";
 
@@ -179,43 +178,38 @@ function FixtureCard({
     );
   }
 
+  const homeIsWinner = played && (fx.home_score ?? 0) > (fx.away_score ?? 0);
+  const awayIsWinner = played && (fx.away_score ?? 0) > (fx.home_score ?? 0);
+
   return (
     <div
       className={cn(
-        "rounded-xl border bg-card p-4 transition-all",
+        "rounded-xl border bg-card p-2 sm:p-4 transition-all flex flex-col justify-center",
         played
           ? "border-border/40 bg-card/60"
           : "border-primary/15 shadow-sm dark:border-primary/20",
       )}
+      style={{ minHeight: "4.5rem" }}
     >
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="flex flex-1 items-center gap-2 min-w-0">
-          <TeamLabel
-            name={fx.home_label ?? "TBD"}
-            score={fx.home_score}
-            isWinner={played && (fx.home_score ?? 0) > (fx.away_score ?? 0)}
-          />
-        </div>
-        <span className="shrink-0 rounded-full bg-muted/50 px-2.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-muted-foreground">
-          vs
-        </span>
-        <div className="flex flex-1 items-center justify-end gap-2 min-w-0">
-          <TeamLabel
-            name={fx.away_label ?? "TBD"}
-            score={fx.away_score}
-            isWinner={played && (fx.away_score ?? 0) > (fx.home_score ?? 0)}
-            align="right"
-          />
-        </div>
-      </div>
-      {ready ? (
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="grid gap-1">
-            <Label className="text-[0.6rem] uppercase tracking-wide text-muted-foreground">
-              Home
-            </Label>
+      <div className="flex items-center gap-1 sm:gap-3">
+        {/* Home */}
+        <div className="flex flex-1 items-center gap-2 sm:gap-3 min-w-0 justify-end">
+          <span
+            className={cn(
+              "text-xs sm:text-sm font-semibold transition-colors text-right mx-4",
+              homeIsWinner
+                ? "text-primary"
+                : fx.home_score !== null
+                  ? "text-muted-foreground"
+                  : "text-foreground",
+            )}
+            title={fx.home_label ?? "TBD"}
+          >
+            {fx.home_label ?? "TBD"}
+          </span>
+          {ready ? (
             <Input
-              className="w-16 font-mono text-center"
+              className="w-10 sm:w-14 h-8 sm:h-9 font-mono text-center px-0 sm:px-1 shrink-0"
               type="number"
               min={0}
               max={99}
@@ -223,14 +217,25 @@ function FixtureCard({
               onChange={(e) => setHome(Number(e.target.value))}
               disabled={!hasPin}
             />
-          </div>
-          <span className="pb-2 text-lg text-muted-foreground/50">–</span>
-          <div className="grid gap-1">
-            <Label className="text-[0.6rem] uppercase tracking-wide text-muted-foreground">
-              Away
-            </Label>
+          ) : (
+            fx.home_score !== null && (
+              <span className="shrink-0 rounded-md px-2 py-0.5 font-mono text-sm font-bold bg-muted text-muted-foreground">
+                {fx.home_score}
+              </span>
+            )
+          )}
+        </div>
+
+        {/* VS */}
+        <span className="shrink-0 rounded-full bg-muted/50 px-1.5 sm:px-2.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-muted-foreground">
+          vs
+        </span>
+
+        {/* Away */}
+        <div className="flex flex-1 items-center gap-2 sm:gap-3 min-w-0 justify-start">
+          {ready ? (
             <Input
-              className="w-16 font-mono text-center"
+              className="w-10 sm:w-14 h-8 sm:h-9 font-mono text-center px-0 sm:px-1 shrink-0"
               type="number"
               min={0}
               max={99}
@@ -238,67 +243,53 @@ function FixtureCard({
               onChange={(e) => setAway(Number(e.target.value))}
               disabled={!hasPin}
             />
-          </div>
-          <Button
-            type="button"
-            size="sm"
-            disabled={!hasPin || saving}
-            onClick={() => void save()}
-            className="ml-auto"
+          ) : (
+            fx.away_score !== null && (
+              <span className="shrink-0 rounded-md px-2 py-0.5 font-mono text-sm font-bold bg-muted text-muted-foreground">
+                {fx.away_score}
+              </span>
+            )
+          )}
+          <span
+            className={cn(
+              "text-xs sm:text-sm font-semibold transition-colors text-left mx-4",
+              awayIsWinner
+                ? "text-primary"
+                : fx.away_score !== null
+                  ? "text-muted-foreground"
+                  : "text-foreground",
+            )}
+            title={fx.away_label ?? "TBD"}
           >
-            {saving ? <Spinner className="mx-2" /> : played ? "Update" : "Save"}
-          </Button>
+            {fx.away_label ?? "TBD"}
+          </span>
         </div>
-      ) : fx.stage === "knockout" ? (
-        <p className="text-xs text-muted-foreground italic">
+
+        {/* Action */}
+        {ready && hasPin && (
+          <div className="shrink-0 pl-1 sm:pl-2 border-l border-border/40 ml-1 sm:ml-0 flex items-center justify-center">
+            <Button
+              type="button"
+              size="sm"
+              disabled={saving}
+              onClick={() => void save()}
+              className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
+            >
+              {saving ? (
+                <Spinner className="mx-1 sm:mx-2 w-3 h-3 sm:w-4 sm:h-4" />
+              ) : played ? (
+                "Update"
+              ) : (
+                "Save"
+              )}
+            </Button>
+          </div>
+        )}
+      </div>
+      {!ready && fx.stage === "knockout" && (
+        <p className="text-[10px] sm:text-xs text-muted-foreground italic text-center mt-1 sm:mt-2">
           Waiting for previous round…
         </p>
-      ) : null}
-    </div>
-  );
-}
-
-function TeamLabel({
-  name,
-  score,
-  isWinner,
-  align = "left",
-}: {
-  name: string;
-  score: number | null;
-  isWinner: boolean;
-  align?: "left" | "right";
-}) {
-  return (
-    <div
-      className={cn(
-        "flex items-center gap-2 min-w-0",
-        align === "right" && "flex-row-reverse text-right",
-      )}
-    >
-      <span
-        className={cn(
-          "truncate text-sm font-semibold transition-colors",
-          isWinner
-            ? "text-primary text-glow"
-            : score !== null
-              ? "text-muted-foreground"
-              : "text-foreground",
-        )}
-      >
-        {name}
-      </span>
-      {score !== null && (
-        <span
-          className={cn(
-            "shrink-0 rounded-md px-2 py-0.5 font-mono text-sm font-bold",
-            isWinner
-              ? "bg-primary/15 text-primary"
-              : "bg-muted text-muted-foreground",
-          )}
-        >
-          {score}
-        </span>
       )}
     </div>
   );
